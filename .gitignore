@@ -1,6 +1,6 @@
 # Directories
 .vs/
-Debug
+Debug/
 
 # Files
 *.user
