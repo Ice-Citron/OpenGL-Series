@@ -85,3 +85,105 @@ What is "target" in terms of OpenGL buffer objects.
     - The target parameter is a powerful part of OpenGL's design, as it provides a generic mechanism for managing various types of data on the GPU in a stateful manner.
 
 -------------------------------------------------------------------------------------
+
+Pre-Episode 8: How I Deal with Shaders in OpenGL
+
+
+Analysing VertexShader and FragmentShader from EP7's code
+
+
+-- Vertex Shader
+
+            std::string vertexShader = R"(
+                #version 330 core
+                
+                layout(location = 0) in vec4 position;
+
+                void main() {
+                    gl_Position = position;
+                }
+            )";
+
+    1. 'std::string vertexShader = R"()"; ': This is the start of a raw string literal in C++ which contains the code for the vertex shader.
+    2. '#version 330 core': This specifies that the shader is using version 3.30 of GLSL in the core profile, which is a modern and portable version.
+    3. 'layout(location = 0) in vec4 position;': This declares an input vertex attribute of type vec4 (a 4-component vector of floats). The 'layout(location = 0)' specifies that this attribute will be linked to the first attribute index of the vertex data passed to the GPU.
+    4. 'void main() {}': The entry point of the shader program.
+    5. "gl_Position = position;": The main function sets the built-in gl_Position variable to the input position. This determines the position of the vertex in normalized device coordinates after all transformations.
+
+-- Further Explanation (Vertex Shader's layout qualifier && gl_Position)
+
+    [\\] Line: layout(location = 0) in vec4 position;
+
+        || "layout(location = 0)": This part of the syntax is known as a layout qualifier. It tells the OpenGL shader program how the vertex data is organized. The "location = 0" part specifies the location index where this attribute can be found. When you create a vertex buffer and set up vertex attributes on the CPU side, you can bind your position data to this location so that the shader can access it. It's essentially an index to the position data in the buffer.
+
+        || "in": This keyword declares "position" as an input to the vertex shader. Inputs to vertex shaders are usually the per-vertex data that come from vertex buffers, like positions, normals, texture coordinates, etc.
+
+        || "vec4 position;": This declares a variable named "position" of type "vec4". A "vec4" is a four-component vector, and in this context, it's used to represent the position of a vertex in 3D space with an additional w-component for homogeneous coordinates. The components of this vector are typically (x, y, z, w).
+
+    [\\] Line: gl_Position = position;
+    
+        || "gl_Position": This is a built-in GLSL variable that the vertex shader must set to tell OpenGL where the vertex is in clip space. Clip space is a coordinate system where OpenGL expects the coordinates to be between -1.0 and 1.0. Any coordinates that fall outside this range will be clipped (i.e., not drawn).
+
+        || "= position;": This line of code assigns the value of the "position" input variable directly to "gl_Position". Since "position" is a "vec4", it directly matches the expected type of "gl_Position". This means that the vertex shader is outputting the vertex position unchanged from the input. It's not applying any transformation, like scaling, rotation, or translation, which you would see in a more complex shader that manipulates the object's shape or position in the scene.
+
+    [\\] The vertex shader operates on each vertex of the geometry that you're drawing. When this shader runs, it takes the provided vertex positions, which are expected to be already in the correct coordinate space (since no transformation is being applied), and passes them through to the rasterizer, which will then interpolate these positions to find the positions of fragments/pixels on the screen. These fragments are then processed by the fragment shader to produce the final pixel colors.
+
+
+-- Fragment Shader
+
+            std::string fragmentShader = R"(
+                #version 330 core
+
+                layout(location = 0) out vec4 color;
+
+                void main() {
+                    color = vec4(1.0, 0.0, 0.0, 1.0);
+                }
+            )";
+
+    1. "std::string fragmentShader = R"()"; ": Similar to the vertex shader, this is the start of a raw string literal in C++ which contains the code for the fragment shader.
+    2. "#version 330 core": Again, this specifies that the shader is using version 3.30 of GLSL in the core profile.
+    3. "layout(location = 0) out vec4 color; ": This declares an output variable color of type "vec4" which will be used to output the color of the fragment.
+    4. void main() {} : The entry point of the shader program for the fragment shader.
+    5. "color = vec4(1.0, 0.0, 0.0, 1.0); ": Inside the main function, it sets the color output to a "vec4" representing the color red with full opacity (RGBA: Red, Green, Blue, Alpha).
+
+
+    \\ The vertex shader is responsible for transforming the vertices of a shape. In this case, it simply assigns the input position to the gl_Position without any transformation.
+
+    \\ The fragment shader is responsible for defining the color of the pixels on the rendered shape. In this case, it colors every pixel it processes in red with full opacity.
+
+    \\ Both shaders are fairly simple and form the most basic shader program possible, which will render a geometric shape in a solid red color.
+
+
+
+Relationship between Vertex Attribute and Layout Qualifier (layout(location = 0))~
+
+- In OpenGL, the location index for vertex attributes is determined by either explicitly specifying it in the shader code using the layout(location = x) qualifier or by querying and setting it programmatically from the OpenGL application code.
+
+-Here's how you can determine and use the location index:
+
+-- Explicit Specification in Shader
+
+    You can explicitly specify the location index in your GLSL shader code using the layout(location = x) qualifier, where x is the index you choose. This is often used for better readability and control over shader inputs:
+
+            layout(location = 5) in vec3 position;
+
+    In this example, the vertex attribute position is assigned to location index 5. You are free to choose any index that suits your organization, as long as you are consistent between your shader code and the vertex attribute pointer setup in your OpenGL application code.
+
+-- Programmatically Determining Location
+
+    If you do not specify the location in the shader, you can query it in your OpenGL application using glGetAttribLocation:
+
+            GLuint positionLocation = glGetAttribLocation(shaderProgram, "position");
+            
+    After this, you would use positionLocation when setting up your vertex attribute pointers:
+
+            glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+-- Why Use Different Indices?
+    
+    The choice of index is somewhat arbitrary, and you can indeed use location = 5 for position if you want to. However, using sequential indices starting from 0 is a common convention because it can be more intuitive, especially when there are multiple attributes. It makes it easier to remember and manage the indices during the setup of vertex buffer objects (VBOs) and vertex array objects (VAOs).
+
+-------------------------------------------------------------------------------------
+
+Pre-Episode 8: How I Deal with Shaders in OpenGL

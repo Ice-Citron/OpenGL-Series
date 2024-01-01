@@ -1,6 +1,7 @@
 # Directories
 .vs/
 Debug/
+OpenGL-Series/Debug/
 
 # Files
 *.user
