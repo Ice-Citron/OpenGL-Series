@@ -57,7 +57,8 @@ OpenGL Shaders
     -- Written in GLSL: Shaders are coded in GLSL, a C-like language specifically for graphics programming.
     -- Compilation and Linking:
        4.1 Shaders are compiled.
-       4.2 Linked into a shader program.
+       4.2 All shaders are together linked into a shader program. Which will then be executed in the GPU. Various functionalities from various shaders are combined into a coherent pipeline, which processes graphical data. 
+            Further notes: This program, overall disctates how vertices are transformed, how pixels are colored, and other graphical operations based on the combined logic of the linked shaders. 
     -- Execution:
        - Run on the GPU for efficient graphics processing.
        - Vertex and fragment shaders are essential, while geometry and tessellation shaders are optional.
@@ -109,6 +110,8 @@ Binding and Unbinding in OpenGL
    -- Error Prevention: Helps avoid bugs by ensuring correct object usage.
    -- Performance: Efficient binding and unbinding can optimize rendering performance.
 
+
+
 -------------------------------------------------------------------------------------
 Episode 5: Vertex Attributes and Layouts in OpenGL
 
@@ -121,25 +124,25 @@ glVertexAttribPointer Method Overview
             GLenum type,
             GLboolean normalized,
             GLsizei stride,
-            const void * pointer
+            const void* pointer
          );
  
 -- Purpose: Configures the format and layout of vertex attributes in a vertex buffer.
 -- Usage: Typically used in the setup phase of OpenGL rendering to specify how vertex data is organized for rendering.
 
 -- Parameters
-   1. index: Attribute index in the shader.
+   1. index: Attribute index in the shader. // can be custom defined in vertex shader
       Specifies which attribute (e.g., position, color) to configure.
    2. size: Number of components per attribute.
-      Common values: 2, 3, 4 (e.g., 3 for a 3D position vector).
+      Size attributes store the size of 1 vertex, for example, if 1 vertex requires 3 floats for positions, and 4 bytes for colour. The size param will be: "sizeof(float) * 3 + 4"
    3. type: Data type of each component.
       E.g., GL_FLOAT for floating-point values.
    4. normalized: Whether to normalize data.
       GL_TRUE or GL_FALSE (use GL_TRUE for normalized data).
    5. stride: Byte offset between consecutive attributes.
       Set to 0 for tightly packed data, otherwise size in bytes of a complete vertex.
-   6. pointer: Offset of the attribute in the buffer.
-      Specifies where the data for the attribute begins in the buffer.
+   6. pointer: Offset of the attribute in the buffer. 
+      Specifies where the data for the attribute begins in the buffer. // This param specifies the memory address which the speciifc attrib starts, for example if the color data starts after 5 float values, need to set this param to "(const void*)sizeof(float) * 5". 
 
 -- Example
         // Assuming position data is at index 0 and texture data is at index 1 in the shader
@@ -249,30 +252,144 @@ Summary of Main Points discussed
 
 
 
-My Personal Research: Difference between Vertex Attribute Arrays and Vertex Array Objects
+-------------------------------------------------------------------------------------
 
-    In OpenGL, vertex attribute arrays and Vertex Array Objects (VAOs) are related but not the same thing. They serve different roles in the process of sending vertex data to the GPU.
-
--- Vertex Attribute Arrays
-    
-    - Purpose: They are part of the vertex data specification. Vertex attribute arrays refer to the individual arrays of vertex data, like position, color, normals, texture coordinates, etc.
-    - Use: You enable and define vertex attribute arrays using functions like glEnableVertexAttribArray and glVertexAttribPointer.
-    - Functionality: They define how the data for each vertex attribute is stored and accessed within a buffer (like format, type, stride, and offset).
-    
--- Vertex Array Objects (VAOs)
-    
-    - Purpose: A VAO is an OpenGL object that stores the state of all vertex attribute arrays and the associated vertex buffer objects (VBOs).
-    - Use: You create a VAO with glGenVertexArrays, and bind it with glBindVertexArray.
-    - Functionality: When a VAO is bound, all subsequent calls to glVertexAttribPointer, glEnableVertexAttribArray, and glDisableVertexAttribArray are stored in the VAO. This makes it easy to switch between different sets of vertex data and attribute configurations. When you want to draw an object, you simply bind the appropriate VAO.
-    
--- Key Difference
-    
-    - Vertex Attribute Arrays are about the data and its structure, defining what the data represents and how it's laid out.
-    - VAOs are about encapsulating and recalling the state related to vertex attribute arrays and VBOs. They are essentially a "snapshot" of the configurations you've set up for rendering, allowing for efficient switching between different vertex data setups.
-
-    -- In summary, vertex attribute arrays define the structure of your vertex data, while VAOs are used to store and recall configurations for rendering that data.
+My Personal Research: Vertex Attribute Arrays and Vertex Array Objects
 
 
+Vertex Attribute Arrays 
+
+[//] Personal note: Vertex Attribute array is merely an abstract concept, each VAA is configured by each glVertexAttribPointer(), and each VAA only stores 1 pointer at a time, and you can call/enable different VAA via its index, such as glEnableVertexAttribArray(index). VAA is merely an abstract attribute ish, on the OpenGL state machine, and VAA can be changed via switching between different VAOs using glBindVertexArray(vao1 or vao2, etc.);
+
+- In OpenGL, each vertex attribute array corresponds to a single glVertexAttribPointer configuration, and these configurations are referenced by their assigned index. Here's a breakdown of how this works:
+
+1. One-to-One Correspondence:
+
+    -- Each call to glVertexAttribPointer sets up the configuration for one vertex attribute array.
+    -- This configuration includes information about how to interpret a specific type of vertex data (such as position, color, or texture coordinates) from a Vertex Buffer Object (VBO).
+
+2. Referencing by Index:
+
+    -- When you call glVertexAttribPointer, you specify an index (the first parameter of the function). This index uniquely identifies that particular vertex attribute array.
+    -- The same index is used to enable or disable the vertex attribute array with glEnableVertexAttribArray or glDisableVertexAttribArray.
+
+3. Example:
+
+    -- Suppose you set up two vertex attributes: position and color.
+
+            // Position attribute setup
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, positionOffset);
+            glEnableVertexAttribArray(0);
+
+            // Color attribute setup
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, colorOffset);
+            glEnableVertexAttribArray(1);
+
+    -- Here, the position attribute is referenced with index 0, and the color attribute is referenced with index 1.
+
+4. Usage in Drawing:
+
+    -- When you draw your object, OpenGL uses these indices to access the corresponding vertex attribute arrays' configurations.
+    -- The configurations tell OpenGL how to read the position and color data from the bound VBO for each vertex.
+
+5. Stored in VAOs:
+
+    -- These configurations are stored in the currently bound Vertex Array Object (VAO).
+    -- When you bind a VAO (glBindVertexArray), all the vertex attribute array configurations associated with that VAO are used.
+
+6. Efficiency and Organization:
+
+    This system allows for organized and efficient management of vertex attributes.
+    You can switch between different sets of vertex attribute configurations just by binding the appropriate VAO.
+    
+- In summary, each vertex attribute array in OpenGL is individually configured with glVertexAttribPointer and referenced by its unique index. These configurations are stored in VAOs, enabling organized and efficient management of vertex attributes in graphics applications.
+
+
+
+Vertex Array Objects (VAOs)
+
+[//] Personal Note: VAO is designed to store a specific set of configuration of VertexAttributeArrays at any one time. Each VAO holds the state of various VAA/VAP (array/pointers), which essentially is information of how to interpret the vertex data. 
+
+The Vertex Array Object (VAO) in OpenGL is essentially a container that stores the state of vertex attribute configurations. When you bind a VAO, all the vertex attribute calls you make (like "glVertexAttribPointer") are stored in this VAO. This feature is extremely useful for organizing vertex attribute configurations and makes switching between different vertex layouts efficient and clean.
+
+-- What Does the VAO Do?
+    
+    1. Stores State: A VAO stores the state of all vertex attribute configurations set by "glVertexAttribPointer", "glEnableVertexAttribArray", and "glDisableVertexAttribArray" calls.
+
+    2. Reduces Redundancy: Without VAOs, you would need to repeat these calls every time you switch between different sets of vertex data, which is inefficient and cumbersome.
+
+    3. Encapsulates Configuration: By using VAOs, you encapsulate all the configuration in one object, making your code cleaner and more manageable.
+
+-- Example Usage of VAOs
+
+    Setting Up Two Different Objects with VAOs: Imagine you have two objects to render, each with different vertex attributes: a simple triangle and a colored square.
+
+    1. Setting Up the Triangle (VAO1):
+
+        // Create and Bind VAO for Triangle:
+
+                    GLuint vao1;
+                    glGenVertexArrays(1, &vao1);
+                    glBindVertexArray(vao1);
+                
+        // Create, Bind, and Populate VBO for Triangle Vertex Positions:
+
+                    GLuint vbo1;
+                    glGenBuffers(1, &vbo1);
+                    glBindBuffer(GL_ARRAY_BUFFER, vbo1);
+                    glBufferData(GL_ARRAY_BUFFER, sizeof(triangleVertices), triangleVertices, GL_STATIC_DRAW);
+
+        // Configure Vertex Attributes for Triangle:
+    
+                    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+                    glEnableVertexAttribArray(0);
+        
+        // Unbind the VAO:
+    
+                    glBindVertexArray(0);
+
+    2. Setting Up the Colored Square (VAO2):
+
+        // Create and Bind VAO for Square:
+            
+            GLuint vao2;
+            glGenVertexArrays(1, &vao2);
+            glBindVertexArray(vao2);
+
+        // Create, Bind, and Populate VBOs for Square Vertex Positions and Colors:
+            - Repeat the process for the square's vertex positions and color data.
+        
+        // Configure Vertex Attributes for Square:
+            - Set up attribute pointers for position and color.
+        
+        // Unbind the VAO:
+        
+                    glBindVertexArray(0);
+
+    3. Rendering
+
+        // Render the Triangle:
+            - Bind vao1 and issue a draw call. The OpenGL context uses the vertex attribute configuration stored in vao1.
+
+                    glBindVertexArray(vao1);
+                    // draw call for the triangle
+
+        // Render the Square:
+            - Bind vao2 and issue a draw call. The OpenGL context switches to the configuration stored in vao2.
+
+                    glBindVertexArray(vao2);
+                    // draw call for the square
+
+    Why Are VAOs Useful?
+
+        -- Organization: They keep vertex configuration code organized, especially when dealing with multiple objects.
+        -- Efficiency: Switching between different vertex configurations is just a matter of binding the appropriate VAO, rather than making multiple glVertexAttribPointer calls each time.
+        -- Cleaner Code: Your rendering code is much cleaner and easier to manage, as it abstracts away the details of the vertex attribute setup.
+    
+    In summary, VAOs are crucial for efficient, organized, and clean management of vertex attribute states in modern OpenGL applications. They encapsulate vertex attribute configurations, allowing for easy and efficient switches between different vertex data setups.
+
+
+-------------------------------------------------------------------------------------
 
 Rendering Pipeline of OpenGL
 

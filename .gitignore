@@ -1,7 +1,7 @@
 # Directories
 .vs/
-Debug/
-OpenGL-Series/Debug/
+bin/
+bin-int/
 
 # Files
 *.user
