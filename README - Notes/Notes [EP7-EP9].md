@@ -46,8 +46,8 @@ glGenBuffer() and glBufferData()
     - Example from your code:
         = "unsigned int buffer;"
         = "glGenBuffers(1, &buffer);"
-        = This generates one buffer object name and stores it in the variable "buffer".
-        // If want to generate more than 1 object, need to pass in array for "GLuint* buffers", which will return an array of Buffer IDs.
+        = This generates one buffer object ID and stores it in the unsigned int variable "buffer".
+        // If want to generate more than 1 object, change the "GLsize i" parameter and pass in array for "GLuint* buffers", which will return an array of Buffer IDs.
 
  2. glBufferData(GLenum target, GLsizeiptr size, const GLvoid* data, GLenum usage);
 
@@ -73,7 +73,7 @@ What is "target" in terms of OpenGL buffer objects.
     - Here are some common buffer object targets:
 
         1. GL_ARRAY_BUFFER: Used for vertex attributes, such as vertex coordinates, normals, colors, or texture coordinates.
-        2. GL_ELEMENT_ARRAY_BUFFER: Used for element index data. This is typically used for indexing vertices in conjunction with glDrawElements or similar functions.
+        2. GL_ELEMENT_ARRAY_BUFFER: Used for element index data. This is typically used for indexing vertices in conjunction with glDrawElements or similar functions. (eg. index buffer objects)
         3. GL_PIXEL_PACK_BUFFER: Used for operations that read pixel data from the OpenGL framebuffer, such as glReadPixels, where the read data will be stored in the buffer.
         4. GL_PIXEL_UNPACK_BUFFER: Used for operations that write pixel data to the OpenGL framebuffer, such as texture updates with glTexSubImage2D.
         5. GL_UNIFORM_BUFFER: Used to store uniform data for shaders, which can be shared among multiple program objects.
@@ -218,4 +218,4 @@ Relationship between Vertex Attribute and Layout Qualifier (layout(location = 0)
 
 -------------------------------------------------------------------------------------
 
-Pre-Episode 8: How I Deal with Shaders in OpenGL
+// Final note [9/2/2024] - The OpenGL State Machine knows what is what in a VBO, in terms of its vertex attributes, is due to the shaders, for example the vertex shader, with "layout(location = 0) in vec4 position;" and "gl_Position = position;" tells OpenGL state machine what is what. 

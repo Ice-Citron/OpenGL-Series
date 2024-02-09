@@ -108,4 +108,22 @@ Episode 11: Uniforms in OpenGL
 
     In this example, the shader program is first activated. Then, the location of the u_Color uniform is retrieved. The uniform is set to a red color using glUniform4f. After setting the uniform, the draw call is made. Finally, glfwSwapInterval(1) is used to synchronize with the monitor's refresh rate.
 
+
+-- Notes on glClear(GL_COLOR_BUFFER_BIT);
+
+    Code:
+
+            GLCall(glClear(GL_COLOR_BUFFER_BIT));
+
+    // is an OpenGL function call that clears the color buffer of the current framebuffer. When this function is executed, it clears the window to the color that was previously set by glClearColor.
+
+    // Here's a breakdown of what's happening:
+
+        1. glClear: This is the OpenGL function used to clear buffers to preset values. It can clear the color buffer, depth buffer, stencil buffer, or any combination of these.
+
+        2. GL_COLOR_BUFFER_BIT: This is a constant passed to glClear that specifies which buffer to clear. In this case, it indicates that only the color buffer should be cleared. If you wanted to clear the depth buffer as well, you would use glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);.
+
+    // When the glClear function is called with the GL_COLOR_BUFFER_BIT, it sets the entire color buffer to the same value, which is the color set by glClearColor (if glClearColor has been called before). This is typically done at the beginning of each frame in the rendering loop to reset the color buffer and prepare for a new set of rendering commands.
 -------------------------------------------------------------------------------------
+
+// Final note [9/2/2024] - The OpenGL State Machine knows what is what in a VBO, in terms of its vertex attributes, is due to the shaders, for example the vertex shader, with "layout(location = 0) in vec4 position;" and "gl_Position = position;" tells OpenGL state machine what is what. 

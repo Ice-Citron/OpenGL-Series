@@ -16,7 +16,7 @@ Vertex Buffers (VBOs) and Vertex Arrays (VAOs) in OpenGL
 --- Vertex Array Objects (VAOs)
     
     - Purpose: Store the state/configuration for rendering the vertex data. They reference VBOs but do not store vertex data themselves.
-    - Usage:
+    - Usage:UH
       1. Create and bind a VAO.
       2. Configure how to interpret the vertex data in VBOs (like attribute layout, stride).
       3. Bind the VAO when drawing to use its configuration.
@@ -58,7 +58,7 @@ OpenGL Shaders
     -- Compilation and Linking:
        4.1 Shaders are compiled.
        4.2 All shaders are together linked into a shader program. Which will then be executed in the GPU. Various functionalities from various shaders are combined into a coherent pipeline, which processes graphical data. 
-            Further notes: This program, overall disctates how vertices are transformed, how pixels are colored, and other graphical operations based on the combined logic of the linked shaders. 
+            Further notes: This program, overall dictates how vertices are transformed, how pixels are colored, and other graphical operations based on the combined logic of the linked shaders. 
     -- Execution:
        - Run on the GPU for efficient graphics processing.
        - Vertex and fragment shaders are essential, while geometry and tessellation shaders are optional.
@@ -133,16 +133,16 @@ glVertexAttribPointer Method Overview
 -- Parameters
    1. index: Attribute index in the shader. // can be custom defined in vertex shader
       Specifies which attribute (e.g., position, color) to configure.
-   2. size: Number of components per attribute.
-      Size attributes store the size of 1 vertex, for example, if 1 vertex requires 3 floats for positions, and 4 bytes for colour. The size param will be: "sizeof(float) * 3 + 4"
+   2. size: Number of components per attribute (1, 2, 3, or 4).
+      For example, if you are trying to store 3 float for 3D-Coordinates of each vertex {0.0f, 1.5f, 2.0f}, size param will be 3. Or size param of 2 for {-1.5f, 9.0f}.
    3. type: Data type of each component.
       E.g., GL_FLOAT for floating-point values.
    4. normalized: Whether to normalize data.
-      GL_TRUE or GL_FALSE (use GL_TRUE for normalized data).
-   5. stride: Byte offset between consecutive attributes.
-      Set to 0 for tightly packed data, otherwise size in bytes of a complete vertex.
-   6. pointer: Offset of the attribute in the buffer. 
-      Specifies where the data for the attribute begins in the buffer. // This param specifies the memory address which the speciifc attrib starts, for example if the color data starts after 5 float values, need to set this param to "(const void*)sizeof(float) * 5". 
+      GL_TRUE or GL_FALSE (use GL_TRUE for normalized data). [normalised data is between -1 and 1, what OpenGL state-machine actually uses.]
+   5. stride: Byte offset between consecutive attribute data. A stride of 0 indicates that the attributes are tightly packed.
+      If each vertex takes up 32 bytes of data, then the stride is 32. 
+   6. pointer: OFFSET of the attribute in the buffer. 
+      Specifies where the data for the attribute first begins in the buffer. // This param specifies the memory address which the speciifc attrib starts, for example if the color data starts after 5 float values, need to set this param to "(const void*)sizeof(float) * 5". 
 
 -- Example
         // Assuming position data is at index 0 and texture data is at index 1 in the shader
@@ -186,24 +186,44 @@ Vertex Attributes in Graphics Programming
 
 - Definition: Vertex attributes are properties of vertices in a 3D mesh, used in rendering pipelines to define the geometry and appearance of 3D models.
 
--- Key Attributes:
+-- The term "Vertex Attribute" in OpenGL refers to the same concept involved in the use of glEnableVertexAttribArray(). In the context of OpenGL, a vertex attribute represents data that is specific to each vertex in a draw call. This data can include various properties such as:
 
-    1. Position: Coordinates in 3D space (x, y, z).
+    1. Position: Coordinates in 2D or 3D space (x, y, z).
     2. Color: RGBA values for vertex coloring.
     3. Texture Coordinates (UVs): Mapping to texture images.
-    4. Normals: Vectors for lighting calculations.
-    5. Tangents and Bitangents: For advanced lighting techniques like normal mapping.
+    4. Normals: Vectors perpendicular to the vertex surface, for lighting calculations to determine how light interacts with the surface. 
+    5. Tangents and Bitangents: For advanced lighting techniques like normal mapping, to simulate fine details on surfaces. 
     6. Custom Attributes: Any additional data required by shaders.
 
--- Usage:
+- These attributes are essential for rendering in OpenGL because they provide the necessary data to the vertex shader, which then processes each vertex in a scene. The vertex shader can use this data to perform transformations, lighting calculations, and other effects before passing the data on to the next stages of the graphics pipeline.
 
-    - Processed by vertex shaders for transformations and lighting.
-    - Essential for defining the shape and detail of 3D objects.
+The process of specifying vertex attributes involves several steps:
 
--- Impact:
+    1. Data Storage: First, you store the vertex attribute data in a buffer (usually a Vertex Buffer Object, or VBO).
+    2. Specification: Next, you use glVertexAttribPointer to tell OpenGL how to interpret the data for each attribute (data type, stride, offset, etc.).
+    3. Enablement: Finally, you enable the attribute for use in rendering with glEnableVertexAttribArray, using the attribute's index to identify it. This index corresponds to the attribute location in the vertex shader.
 
-    - Directly influences the visual output in 3D rendering.
-    - Enables complex effects and realistic representations in 3D graphics.
+Here's a simplified example of how these concepts come together:
+
+        // Define vertex data, including positions and colors
+        float vertices[] = {
+            // Positions    // Colors
+            0.5f, -0.5f,   1.0f, 0.0f, 0.0f, // Vertex 1: Position and color
+            -0.5f, -0.5f,  0.0f, 1.0f, 0.0f, // Vertex 2: Position and color
+            0.0f,  0.5f,   0.0f, 0.0f, 1.0f  // Vertex 3: Position and color
+        };
+
+        // Generate and bind VBO, upload data...
+
+        // Specify position attribute
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+
+        // Specify color attribute
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+
+In this example, two vertex attributes are defined: position (2 components) and color (3 components). The glVertexAttribPointer calls specify how each attribute is laid out in the buffer, and glEnableVertexAttribArray enables them for use in rendering. These attributes are then accessible in the vertex shader, where they can be manipulated and used to generate the final output to the screen.
 
 
 
@@ -221,7 +241,7 @@ In graphics programming, a "layout" typically refers to the arrangement and orga
     1. Attribute Format: Specifies the type of each attribute (e.g., float, int) and whether the data is normalized.
     2. Attribute Size: Defines the number of components per attribute. For example, a position might have 3 components (x, y, z), while a color might have 4 components (red, green, blue, alpha).
     3. Stride: The size (in bytes) of each vertex in the buffer. It determines the byte offset between consecutive vertices.
-    4. Offset: The byte offset of an attribute within a vertex. For example, if a vertex consists of a position (3 floats) followed by a color (4 bytes), the color attribute would have an offset of 12 bytes (the size of 3 floats).
+    4. Offset: The byte offset of an attribute within a vertex. For example, if a vertex consists of a position (3 floats) followed by a color (4 bytes), the color attribute would have an offset of 12 bytes (3 * sizeof(float)).
 
 -- Importance in the Graphics Pipeline
 
@@ -232,6 +252,8 @@ In graphics programming, a "layout" typically refers to the arrangement and orga
 -- Application
 
     In OpenGL, layout specification is often done using layout qualifiers in GLSL (the shader language) and functions like glVertexAttribPointer to describe the vertex buffer layout.
+
+
 
 -------------------------------------------------------------------------------------
 
@@ -259,50 +281,21 @@ My Personal Research: Vertex Attribute Arrays and Vertex Array Objects
 
 Vertex Attribute Arrays 
 
-[//] Personal note: Vertex Attribute array is merely an abstract concept, each VAA is configured by each glVertexAttribPointer(), and each VAA only stores 1 pointer at a time, and you can call/enable different VAA via its index, such as glEnableVertexAttribArray(index). VAA is merely an abstract attribute ish, on the OpenGL state machine, and VAA can be changed via switching between different VAOs using glBindVertexArray(vao1 or vao2, etc.);
+[//] "Is vertex attribute arrays just data stores inside the openGL state machine, which for each VAOs, VAAs are linked to a specific vertex attribute assigned?" (Yes)
 
-- In OpenGL, each vertex attribute array corresponds to a single glVertexAttribPointer configuration, and these configurations are referenced by their assigned index. Here's a breakdown of how this works:
+-- Vertex attribute arrays are indeed data stores within the OpenGL state machine, and for each Vertex Array Object (VAO), these are linked to specific vertex attributes as assigned through configuration commands.
 
-1. One-to-One Correspondence:
+-- Here's a bit more detail to clarify this concept:
 
-    -- Each call to glVertexAttribPointer sets up the configuration for one vertex attribute array.
-    -- This configuration includes information about how to interpret a specific type of vertex data (such as position, color, or texture coordinates) from a Vertex Buffer Object (VBO).
+    // OpenGL State Machine: OpenGL operates as a state machine, which means it maintains the state of various configurations and resources until changed or reset. This state includes everything from buffer bindings, texture settings, to shader programs in use, and, relevant to this discussion, the configurations of vertex attribute arrays.
 
-2. Referencing by Index:
+    // Vertex Attribute Arrays: These arrays store the data necessary for rendering, such as vertex coordinates, colors, normals, texture coordinates, and more. The structure and interpretation of this data are defined by how you set up the vertex attribute pointers (using glVertexAttribPointer), including information like the data type, the number of components per attribute, whether the data is normalized, the stride, and the offset within the buffer.
 
-    -- When you call glVertexAttribPointer, you specify an index (the first parameter of the function). This index uniquely identifies that particular vertex attribute array.
-    -- The same index is used to enable or disable the vertex attribute array with glEnableVertexAttribArray or glDisableVertexAttribArray.
+    // Vertex Array Objects (VAO): A VAO is an object that encapsulates all of the state needed to supply vertex data. It stores the configurations of vertex attribute arrays and the associated buffer objects (VBOs) bindings. When you bind a VAO (glBindVertexArray), all of the vertex attribute configurations and VBO bindings stored in that VAO become active, making the VAO a central mechanism to switch between different sets of vertex data efficiently.
 
-3. Example:
+    // Linking Vertex Attribute Arrays to Shader Attributes: When you configure vertex attribute arrays within a VAO, each array is linked to a specific attribute location in your vertex shader. These locations are either explicitly assigned in the shader code using the layout(location = x) qualifier or queried and set within the application code. The linkage is established through the use of the glVertexAttribPointer function, which associates each vertex attribute array with an attribute index. This index corresponds to the location of the attribute in the shader, allowing the shader to access the input vertex data correctly.
 
-    -- Suppose you set up two vertex attributes: position and color.
-
-            // Position attribute setup
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, positionOffset);
-            glEnableVertexAttribArray(0);
-
-            // Color attribute setup
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, colorOffset);
-            glEnableVertexAttribArray(1);
-
-    -- Here, the position attribute is referenced with index 0, and the color attribute is referenced with index 1.
-
-4. Usage in Drawing:
-
-    -- When you draw your object, OpenGL uses these indices to access the corresponding vertex attribute arrays' configurations.
-    -- The configurations tell OpenGL how to read the position and color data from the bound VBO for each vertex.
-
-5. Stored in VAOs:
-
-    -- These configurations are stored in the currently bound Vertex Array Object (VAO).
-    -- When you bind a VAO (glBindVertexArray), all the vertex attribute array configurations associated with that VAO are used.
-
-6. Efficiency and Organization:
-
-    This system allows for organized and efficient management of vertex attributes.
-    You can switch between different sets of vertex attribute configurations just by binding the appropriate VAO.
-    
-- In summary, each vertex attribute array in OpenGL is individually configured with glVertexAttribPointer and referenced by its unique index. These configurations are stored in VAOs, enabling organized and efficient management of vertex attributes in graphics applications.
+-- In summary, each VAO maintains its own set of configurations for vertex attribute arrays, effectively linking them to the specific vertex attributes used in shaders. This design allows for efficient switching between different vertex data setups by simply binding the appropriate VAO, making it a powerful feature for managing vertex data in OpenGL applications.
 
 
 
@@ -427,7 +420,7 @@ Rendering Pipeline of OpenGL
 
         - Functionality: Converts primitives into fragments for each pixel they cover.
         - OpenGL Methods:
-            = Controlled by the OpenGL context, not directly exposed through methods. Settings like viewport dimensions set with glViewport().
+            = Controlled by the OpenGL context (the state machine), not directly exposed through methods. Settings like viewport dimensions set with glViewport().
     
     6. Fragment Shading
 
