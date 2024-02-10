@@ -341,6 +341,7 @@ The Vertex Array Object (VAO) in OpenGL is essentially a container that stores t
     
                     glBindVertexArray(0);
 
+
     2. Setting Up the Colored Square (VAO2):
 
         // Create and Bind VAO for Square:
@@ -380,6 +381,8 @@ The Vertex Array Object (VAO) in OpenGL is essentially a container that stores t
         -- Cleaner Code: Your rendering code is much cleaner and easier to manage, as it abstracts away the details of the vertex attribute setup.
     
     In summary, VAOs are crucial for efficient, organized, and clean management of vertex attribute states in modern OpenGL applications. They encapsulate vertex attribute configurations, allowing for easy and efficient switches between different vertex data setups.
+
+[//] (10/2/2024) Additional note about VAOs, VAOs allow you to, once you declared glVertexAttribPointer() once for VBO for "index=0" lets say. You now no longer have to redeclare glVertexAttribPointer() and glEnableVertexAttribPointer(GLuint index) everytime anymore, reducing redundancy and code repetition. 
 
 
 -------------------------------------------------------------------------------------

@@ -106,7 +106,7 @@ Analysing VertexShader and FragmentShader from EP7's code
 
     1. 'std::string vertexShader = R"()"; ': This is the start of a raw string literal in C++ which contains the code for the vertex shader.
     2. '#version 330 core': This specifies that the shader is using version 3.30 of GLSL in the core profile, which is a modern and portable version.
-    3. 'layout(location = 0) in vec4 position;': This declares an input vertex attribute of type vec4 (a 4-component vector of floats). The 'layout(location = 0)' specifies that this attribute will be linked to the first attribute index of the vertex data passed to the GPU.
+    3. 'layout(location = 0) in vec4 position;': This declares an input vertex attribute of type vec4 (a 4-component vector of floats). The 'layout(location = 0)' specifies that this attribute will be linked to the first attribute index of the vertex data passed to the GPU. (Needs to take in position/layout(location = 0) as vec4, because gl_Position is always a vec4 component // (x, y, z, w) -- xyz is used for 3D coordinates. w is used for perspective projection of vertex, eg, for orthographhic projections, 'w'==1.0).
     4. 'void main() {}': The entry point of the shader program.
     5. "gl_Position = position;": The main function sets the built-in gl_Position variable to the input position. This determines the position of the vertex in normalized device coordinates after all transformations.
 
@@ -218,4 +218,57 @@ Relationship between Vertex Attribute and Layout Qualifier (layout(location = 0)
 
 -------------------------------------------------------------------------------------
 
+// No notes for EP9. Index buffer episode.
+
 // Final note [9/2/2024] - The OpenGL State Machine knows what is what in a VBO, in terms of its vertex attributes, is due to the shaders, for example the vertex shader, with "layout(location = 0) in vec4 position;" and "gl_Position = position;" tells OpenGL state machine what is what. 
+
+// Further note - This is regarding the layout(location = 0) finalColor; in the fragment shader. 
+
+    -- In a fragment shader, the layout(location = 0) out vec4 color; declaration specifies an output variable that will be used to write the final color of a fragment. This output is directed to a specific color buffer of the framebuffer, which, in most cases, is the buffer used for displaying the rendered image on the screen.
+
+    -- Why Specify location = 0?
+    
+        The location qualifier in this context specifies which draw buffer the output is written to. When rendering to a framebuffer with multiple color attachments (for example, when performing off-screen rendering or when using advanced rendering techniques like deferred shading), you can have multiple outputs from the fragment shader, each writing to a different color attachment. The location index corresponds to the draw buffer index:
+
+    \\ "location = 0" is the default and refers to the primary color buffer (often the only one used in simple rendering scenarios).
+    \\ "location = 1", location = 2, etc., would refer to additional color buffers if your framebuffer configuration supports them.
+    
+    -- Can This Output Be Accessed?
+        
+        Yes, but how it is accessed depends on your rendering setup:
+
+        \\ Default Framebuffer: For the default framebuffer (the screen), the output is directly visible as the rendered pixels.
+        \\ Custom Framebuffers (FBOs): For custom framebuffers, the output can be accessed by binding the framebuffer as a texture in subsequent rendering operations or by reading the framebuffer data back to the CPU with functions like glReadPixels.
+    
+    -- Does the Order of Index Matter?
+    
+        Yes, the order of the index matters when you have multiple output variables in the fragment shader. The location index must match the intended draw buffer. For instance, if you're using a framebuffer with multiple color attachments for different purposes (e.g., one for color information, another for specular highlights), you need to ensure that your shader outputs match the framebuffer's attachment points. This means setting the correct location for each output variable.
+
+    [] Example Use Case
+    
+        In a simple shader setup where you're only writing to one color buffer (the most common scenario for beginners and intermediate rendering tasks), you might not need to explicitly set the location if there's only one output. However, explicitly specifying layout(location = 0) out vec4 color; is considered good practice for clarity and for making your code more adaptable to future changes that might involve multiple outputs.
+
+        In more complex shaders, especially those used in post-processing, deferred shading, or other advanced rendering techniques, you might have something like:
+
+                layout(location = 0) out vec4 albedoColor;
+                layout(location = 1) out vec4 normalData;
+                layout(location = 2) out vec4 specularColor;
+
+        Here, each output variable is associated with a different purpose, and the order (location) directly corresponds to how you've set up your framebuffer's color attachments.
+
+[\\] Further prompt questions: i assume that by default, if i have not explicitly declared any framebuffer settings, openGL state machine would by default use the (location=0) output for colour?
+
+    Response:
+
+        == Yes, that's correct. In the absence of explicitly declared framebuffer settings to target multiple color attachments, the OpenGL state machine defaults to using the output variable of the fragment shader that is specified with layout(location = 0) for the color output. This output is directed to the default framebuffer's color buffer, which is typically the screen or the window surface that you're rendering to.
+
+        == In simpler terms, when you write something like this in a fragment shader:
+
+                #version 330 core
+                layout(location = 0) out vec4 color;
+
+        == And then don't explicitly configure multiple color attachments for a framebuffer, OpenGL automatically routes the data written to the color output variable to the default color buffer (which is the primary buffer used for display).
+
+        == This behavior aligns with the most common rendering scenarios where only a single output is required for the fragment color, and thus, location = 0 is implicitly understood to be the target for the fragment's final color.
+
+        == When using the default framebuffer (i.e., when rendering directly to the screen), there is typically only one color buffer active, and it is at location = 0. If you later decide to use Framebuffer Objects (FBOs) for off-screen rendering with multiple color attachments, you can then specify other locations (layout(location = N) out vec4 someOutput;) to write to other color buffers. These must be explicitly enabled and configured through OpenGL calls that attach textures or renderbuffers to the FBO's color attachment points.
