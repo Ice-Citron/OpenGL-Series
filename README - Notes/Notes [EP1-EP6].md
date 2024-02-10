@@ -311,6 +311,8 @@ The Vertex Array Object (VAO) in OpenGL is essentially a container that stores t
 
     2. Reduces Redundancy: Without VAOs, you would need to repeat these calls every time you switch between different sets of vertex data, which is inefficient and cumbersome.
 
+    WARNING - Under the same VAO, but different VBOs, eg when a new VBO is created, the previous glVertexAttribPointer or VAA settings that applied for the previous VBO don't apply to the newly created VBO. VAAs are specific configurations for each VBOs only, you need to re-declare VertexAttrib setting each time you create a new VBO, assuming you are still using the same VAO. 
+
     3. Encapsulates Configuration: By using VAOs, you encapsulate all the configuration in one object, making your code cleaner and more manageable.
 
 -- Example Usage of VAOs
@@ -382,7 +384,9 @@ The Vertex Array Object (VAO) in OpenGL is essentially a container that stores t
     
     In summary, VAOs are crucial for efficient, organized, and clean management of vertex attribute states in modern OpenGL applications. They encapsulate vertex attribute configurations, allowing for easy and efficient switches between different vertex data setups.
 
-[//] (10/2/2024) Additional note about VAOs, VAOs allow you to, once you declared glVertexAttribPointer() once for VBO for "index=0" lets say. You now no longer have to redeclare glVertexAttribPointer() and glEnableVertexAttribPointer(GLuint index) everytime anymore, reducing redundancy and code repetition. 
+[//] (10/2/2024) Additional note about VAOs, VAOs allow you to, once you declared glVertexAttribPointer() once for VBO for "index=0" lets say. You now no longer have to redeclare glVertexAttribPointer() and glEnableVertexAttribPointer(GLuint index) everytime anymore (when switching between VBOs, NOTE: under the same VAO, different VBO still needs new VAAs to be declared), reducing redundancy and code repetition. 
+    [//] To have multiple VBOs concurrently, with different VAA settings to them at the same time. You actually need to have multiple VAOs at the same time, and then for each VBO to have a specific setting, you assign a specific VAO for it, bind a specific VAO, setup the VBO, and then unbind the specific VAO, and for a different VBO, repeat the steps of (bind VAO, setup VBO, unbind VAO). 
+        -- This is a common and efficient practice in OpenGL for managing and rendering different sets of geometry with different vertex data layouts. This enables you to switch between VAOs for their respective configurations for VAOs. 
 
 
 -------------------------------------------------------------------------------------

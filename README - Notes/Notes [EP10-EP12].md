@@ -49,6 +49,7 @@ Code Analysis
 
 [//] Further note (10/2/2024) -- You can run x; itself in GLCall(x);, because when an OpenGL function encounters an error, it typically does not halt the execution of your program. Instead, it will set an error flag in the OpenGL context's state machine, which can be queried later using glGetError(). This design allows your program to continue running even if an OpenGL error occurs, giving you the opportunity to handle the error as you see fit.
 
+
 -------------------------------------------------------------------------------------
 
 Episode 11: Uniforms in OpenGL
@@ -133,7 +134,7 @@ Episode 11: Uniforms in OpenGL
         2. GL_COLOR_BUFFER_BIT: This is a constant passed to glClear that specifies which buffer to clear. In this case, it indicates that only the color buffer should be cleared. If you wanted to clear the depth buffer as well, you would use glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);.
 
     // When the glClear function is called with the GL_COLOR_BUFFER_BIT, it sets the entire color buffer to the same value, which is the color set by glClearColor (if glClearColor has been called before). This is typically done at the beginning of each frame in the rendering loop to reset the color buffer and prepare for a new set of rendering commands.
-    
+
 -------------------------------------------------------------------------------------
 
 -- Notes on how does OpenGL render objects using VBOs (Vertex Buffer Objects) and IBOs (Index Buffer Objects) despite they have been unbinded. 
@@ -307,4 +308,28 @@ Episode 11: Uniforms in OpenGL
                 }
 
         1. After setting up the VAO and enabling it, if you want to disable IBOs or VAAs for example, you actually need to firstly unbind the VAO first, using "glBindVertexArray(0);", and then when you are going to draw again, as seen in the code above, you need to rebind the VAO, using glBindVertexArray(vao);, in such, the VAO state machine will provide with its previously "retained" IBOs and VAAs states, etc. 
+
+
+-------------------------------------------------------------------------------------
+
+Episode 12 - Vertex Arrays in OpenGL
+
+[//] Notes regarding behaviour of glVertexAttribPointer 
+
+    -- Essentially, glVertexAttribPointer is setup'd and linked to each vertex buffer. When you create a new VBO, you need to re-invoke a new set of glVertexAttribPointer, and tell the VAO State Machine what is the configuration of this new VBO. WARNING: Contrary to beliefs thus far, the VertexAttribArray settings don't actually carry over for all subsequent VBOs. 
+        <<>> As mentioned in Notes [EP1-6], you can have multiple VAOs at the same time, for different VAAs configurations for different VBOs at the same time, enabling each VBO to have their own specific configuration at the same time without having to reconfigure them every time you want to use them. This is done by having multiple VAOs; binding a specific VAO; setting up a specific VBO; unbinding the specific VAO; repeat these few steps for each VBO. And now whenever you want to use a specific VBO with its configuration, just rebind the specific VAO, and you are free to proceed. 
+
+    -- Prompt Notes:
+
+        1. One Vertex Buffer per Call: The glVertexAttribPointer function is used to specify the layout of vertex attribute data in the currently bound vertex buffer. It associates a specific vertex attribute index (like position, color, texture coordinates, etc.) with the data format and layout in that buffer. This association is made for one vertex buffer at a time, per call. If you have multiple vertex attributes (e.g., position, color), you need to call glVertexAttribPointer for each attribute, specifying how each attribute's data is laid out in the buffer.
+
+        2. Calling for Each New Vertex Buffer: If you create a new vertex buffer and want to use it for vertex attribute data, you need to bind this new buffer with glBindBuffer(GL_ARRAY_BUFFER, bufferID) and then call glVertexAttribPointer for each vertex attribute you want to associate with this new buffer. This step is necessary every time you switch to a different vertex buffer that you intend to use for vertex attributes.
+
+        3. Vertex Attribute Array Association: The term "vertex attribute array" refers to the concept of enabling and specifying the layout of vertex attributes in the context of a Vertex Array Object (VAO). When you call glVertexAttribPointer, you're effectively telling OpenGL how to interpret the data within the bound vertex buffer for a specific attribute index. This setup is stored in the currently bound VAO. Therefore, a VAO can be thought of as a collection of these associations between vertex attributes and vertex buffers, along with the state needed to manage these attributes (like enabling vertex attribute arrays with glEnableVertexAttribArray).
+
+        4. Efficiency with VAOs: By using VAOs, you can efficiently switch between different sets of vertex data and attribute layouts. You set up the associations between vertex attributes and buffers once per VAO, and then by binding a different VAO, you switch all those associations in one operation. This is much more efficient than binding buffers and specifying attribute pointers every time you want to draw something different.
+
+    In summary, glVertexAttribPointer is indeed for specifying the layout of data in one vertex buffer per call, and you need to call it for each attribute for every new vertex buffer you intend to use for rendering. The associations made by these calls are stored in the VAO, allowing you to switch between different vertex data setups efficiently.
+
+
 

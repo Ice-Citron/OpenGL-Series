@@ -6,11 +6,31 @@
 #include <string>
 #include <sstream>
 
-#include "Renderer.h"
 
-#include "VertexBuffer.h"
-#include "IndexBuffer.h"
+// MSVC specific function. __ means that its compiler intrinsic. This essentially inserts a breakpoint whenver an error is encountered. 
+#define ASSERT(x) if (!x) __debugbreak(); // Only works in debug mode. 
+#define GLCall(x) GLClearError();\
+				x;\
+				ASSERT(GLLogCall(#x, __FILE__, __LINE__))
+				//'#x' converts x into a string // __FILE__ and __LINE__ is supported by all compilers, unlike __debugbreak(), which is only for MSVCs
 
+
+static void GLClearError() {
+
+	// Clears all the errors from OpenGL.
+	// glGetError only returns 1 error at once, from a list of errors, thus in order to know what the errors are, you have to loop through, until GL_NO_ERROR is returned. 
+	while (glGetError() != GL_NO_ERROR); 
+}
+
+static bool GLLogCall(const char* function, const char* file, int line) { 
+
+	while (GLenum error = glGetError()) {
+		// Now prints the flag, and also function and file name, and line.
+		std::cout << "[OpenGL Error] (" << error << "): " << function << " " << file << ": " << line << std::endl;
+		return false;
+	}
+	return true;
+}
 
 struct ShaderProgramSource {
 
@@ -125,7 +145,7 @@ int main()
 {
 	GLFWwindow* window;
 
-	/* Initialises the library */
+	/* Initialize the library */
 	if (!glfwInit())
 		return -1;
 
@@ -172,13 +192,20 @@ int main()
 	GLCall(glBindVertexArray(vao)); // activates vao
 
 	// Vertex Buffer
-	VertexBuffer* vb = new VertexBuffer(positions, (4 * 2) * sizeof(float));
+	unsigned int buffer;
+	GLCall(glGenBuffers(1, &buffer));
+	GLCall(glBindBuffer(GL_ARRAY_BUFFER, buffer));
+	GLCall(glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (4 * 2), positions, GL_STATIC_DRAW)); // creates and initialises a buffer object's data store
 	
 	GLCall(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0));
 	GLCall(glEnableVertexAttribArray(0));
 
 	// Index Buffer
-	IndexBuffer* ib =  new IndexBuffer(indices, 6);
+	unsigned int ibo;
+	GLCall(glGenBuffers(1, &ibo));
+	GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo)); // this is specifying that this buffer object will be used for element indices during drawing operations. 
+	// [below] Creates and initialises a buffer object's data store // Uploading index data from CPU RAM to GPU's VRAM. 
+	GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(unsigned int), indices, GL_STATIC_DRAW)); 
 
 
 	// Unbinds the current array buffer. This is a safety measure. The vertex attribute pointers are already associated with the vertex data in the buffer, so 
@@ -221,9 +248,6 @@ int main()
 		/* Poll for and process events */
 		glfwPollEvents();
 	}
-
-	delete vb;
-	delete ib;
 
 	glDeleteProgram(shader);
 
