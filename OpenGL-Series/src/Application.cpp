@@ -10,6 +10,7 @@
 
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
+#include "VertexArray.h"
 
 
 struct ShaderProgramSource {
@@ -166,25 +167,14 @@ int main()
 		2, 3, 0 
 	}; 
 
-	// Vertex Array Object (VAO)
-	unsigned int vao;
-	GLCall(glGenVertexArrays(1, &vao));
-	GLCall(glBindVertexArray(vao)); // activates vao
-
-	// Vertex Buffer
+	// Vertex Array Object (VAO) and Vertex Buffer Object (VBO) and Index Buffer Object (IBO)
+	VertexArray*  va = new VertexArray();
 	VertexBuffer* vb = new VertexBuffer(positions, (4 * 2) * sizeof(float));
-	
-	GLCall(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0));
-	GLCall(glEnableVertexAttribArray(0));
+	IndexBuffer*  ib =  new IndexBuffer(indices, 6);
 
-	// Index Buffer
-	IndexBuffer* ib =  new IndexBuffer(indices, 6);
-
-
-	// Unbinds the current array buffer. This is a safety measure. The vertex attribute pointers are already associated with the vertex data in the buffer, so 
-	// unbinding the buffer won't affect the association.
-	// GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)); // will lead to black screen, only unbind if have proper VAO setup, check [ep10-12] notes.
-	GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
+	VertexBufferLayout* layout = new VertexBufferLayout();
+	layout->Push<float>(2);
+	va->AddBuffer(*vb, *layout);
 
 
 	ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
@@ -194,6 +184,13 @@ int main()
 	GLCall(int location = glGetUniformLocation(shader, "u_Color")); // naming convention of uniform. with 'u_'
 	ASSERT((location != -1));
 	GLCall(glUniform4f(location, 0.8f, 0.3f, 0.8f, 1.0f));
+	
+	GLCall(glUseProgram(0));
+
+	
+	va->Unbind(); // GLCall(glBindVertexArray(0));
+	vb->Unbind(); // GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
+	ib->Unbind(); // GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
 
 	float r = 0.0f;
 	float increment = 0.01f;
@@ -203,8 +200,12 @@ int main()
 	{
 		/* Render here */
 		GLCall(glClear(GL_COLOR_BUFFER_BIT));
-
+		
+		GLCall(glUseProgram(shader));
 		GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f)); // uniform is set per draw call, unlike vertex attributes which are set per vertex. 
+
+		va->Bind();
+		ib->Bind();
 
 		GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
 
@@ -222,7 +223,9 @@ int main()
 		glfwPollEvents();
 	}
 
+	delete va;
 	delete vb;
+	delete layout;
 	delete ib;
 
 	glDeleteProgram(shader);

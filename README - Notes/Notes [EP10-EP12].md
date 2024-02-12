@@ -137,64 +137,40 @@ Episode 11: Uniforms in OpenGL
 
 -------------------------------------------------------------------------------------
 
--- Notes on how does OpenGL render objects using VBOs (Vertex Buffer Objects) and IBOs (Index Buffer Objects) despite they have been unbinded. 
+[//] (13/2/2024) Personal note on weird IBO behaviour with VAO on my machine.
 
-    || Regarding how is VBO retained till rendering
-    || Here's the sequence of events that occur when you set up and use a VAO and VBO:
+    -- Unsure, in theory after VAO is created, and VBO and IBO is setup and binded. Once you unbind VAO and unbind IBO. When you rebind VAO again: 
 
-        1. Bind VAO: When you bind a VAO, you tell OpenGL that you're going to store vertex attribute states in this VAO.
+        == Based on the specification, the VAO state machine should know what IBO to use, however in my case, I need to rebind IBO after I rebinded my VAO, else there will be a black screen, ie my VAO state machine don't know what am I pointing to. 
 
-        2. Bind VBO and Set Vertex Attribute Pointers: Binding the VBO and then calling glVertexAttribPointer while a VAO is bound causes the VAO to store the relationship between the vertex attributes and the currently bound VBO. The VAO keeps track of which buffer to use for the attributes and how to interpret the data within that buffer.
 
-        3. Unbind VBO: After setting up the vertex attribute pointers, you can unbind the VBO. This is because the VAO still retains the information about which VBO was bound and how to interpret its data. The VBO is not actually detached from the VAO; only its binding to the target GL_ARRAY_BUFFER is removed.
-
-        4. Unbind VAO (Optional): You can unbind the VAO to prevent accidental modification of its state. The VAO retains all its configurations.
-
-        5. Rendering: When you want to render, you bind the VAO again. The VAO tells the GPU which VBOs to use and how to interpret the data in them for rendering. The GPU uses this information to fetch vertex data directly from the VBOs in its VRAM.
-
-    || In summary, once configured and bound to a VAO, the VBOs don't need to be bound again for rendering as long as you use the same VAO. The GPU knows what to render because the VAO has stored all the necessary state, including which VBOs to use. This stored state points the GPU to the correct locations in VRAM where the vertex data resides.
-
-    || Regarding how is IBO retained till rendering
-
-        1. Creation and Binding: When you create an IBO and bind it with glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);, you are specifying that this buffer object will be used for element indices during drawing operations.
-
-        2. Data Storage: By calling glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, indices, usage); you are uploading the actual index data from your CPU memory to the GPU's VRAM. The indices is the array containing the indices, size is the size of this array in bytes, and usage hints at how the data will be accessed (e.g., GL_STATIC_DRAW for data that changes infrequently).
-
-        3. State Saving in VAO: Unlike the vertex attributes which are linked to the VAO when glVertexAttribPointer is called, the association of an IBO with a VAO happens when you bind the IBO while a VAO is bound. The VAO stores the binding of the IBO, so you do not need to bind the IBO again as long as you use the same VAO.
-
-        4. Unbinding IBO (Optional): After you have bound the IBO while the VAO is active, the VAO retains the information about the IBO. You can then unbind the IBO if desired. The VAO still knows which IBO to use when it's time to draw.
-
-        5. Drawing: When issuing a draw call with glDrawElements, OpenGL uses the index data from the IBO currently bound to the VAO to determine the order in which to draw the vertices. Since this data is already in VRAM, the GPU can efficiently access and use it to render the geometry specified by the indices.
-
-    || In summary, the IBO is sent to the GPU's VRAM and its binding is stored in the VAO. This allows the GPU to use the indices to access vertex data efficiently during rendering operations.
-
-[\\] (10/2/2024) Further notes regarding how VAAs and IBOs work in the same VAOs, if they are not renewed. Essentially, VAAs and IBOs once declared and binded, will be stored inside the VAO state machine. So, unless the VAA or IBO is redeclared, they will remain the same inside the VAO state machine, and they will be applied to future VBOs that's declared. 
-
-    -- Prompt:
-
-        what i meant was, if you want to use the same vertex attribute pointers as previously, if you don't set new VAA, would this result in the previously setted VAA to be applied to this new VBO? 
-
-        and i am wondering whether is this same logic also applies to new VBOs too, in which, if i don't explicitly declare a new IBO, would the previous IBO be used?
-
-        all of the above is assuming that a VAO is already bound throughout and isnt changed
+[\\] (13/2/2024) Clarification on VAO, VBO, VAA and IBO. 
 
     -- Response: 
     
-        || Ah, I understand your question now. If a VAO is already bound and you bind a new VBO without setting new vertex attribute pointers, the new VBO will use the vertex attribute pointers (VAA) that were previously set while the VAO was bound. This is because the VAA state is stored within the VAO and doesn't change just because you bind a new VBO.
+        Clarification: 
 
-        || Similarly, if you bind a new VBO and don't bind a new IBO (assuming an IBO was already bound while this VAO was bound), then the previously bound IBO will be used for indexed drawing commands like glDrawElements.
+            1. VAO State: A Vertex Array Object (VAO) stores the state of vertex attribute configurations. This includes calls to glVertexAttribPointer, which specify how vertex attributes are laid out in a Vertex Buffer Object (VBO).
 
-        || Here’s a step-by-step breakdown:
+            2. VBOs and VAA: Each vertex attribute configuration in a VAO points to wherever the currently bound VBO was when glVertexAttribPointer was called. The VAO does not store the VBO itself, but the attribute pointers set by glVertexAttribPointer are associated with the VBO that was bound at the time of the call. If you bind a new VBO and do not update the attribute pointers, the VAO has no knowledge of this new VBO.
+
+            3. IBO State: When you bind an IBO (or EBO) while a VAO is bound, that IBO is saved as part of the VAO's state. This means any draw calls made while this VAO is bound will use this IBO for indexing.
+
+            4. Changing VBOs: If you bind a new VBO while the VAO is bound, you typically need to re-specify the vertex attribute pointers if the new VBO has a different layout. If the new VBO has the same layout as the VBO that was originally used to set up the VAA, you don't need to re-specify the attribute pointers.
+
+            5. IBO and VBO Independence: The IBO is independent of the VBO. You can change VBOs without affecting the IBO. The VAO will continue to use the IBO that was bound to it for indexed drawing commands, regardless of which VBO is currently bound.
+
+        Here's a corrected version of the steps:
 
             1. Bind VAO: You bind a VAO to start recording state.
             2. Bind VBO and Set VAA: You bind a VBO and call glVertexAttribPointer to set up the vertex attribute pointers. This state is now saved in the currently bound VAO.
             3. Bind IBO: You bind an IBO. This is also now part of the VAO's state.
-            4. Bind New VBO (No New VAA): If you bind a new VBO and do not call glVertexAttribPointer again, the previously set vertex attribute pointers from the VAO will still be in effect. This means the new VBO must have the same vertex layout as what was defined in the VAA.
-            5. No New IBO: If you don't bind a new IBO, the VAO will use the one that was previously bound for any glDrawElements calls.
+            4. Bind New VBO (Same Layout): If you bind a new VBO with the same layout and do not call glVertexAttribPointer again, the vertex attribute pointers from the VAO will still be in effect. This means the new VBO must have the same vertex layout as what was defined in the VAA.
+            5. Bind New VBO (Different Layout): If the new VBO has a different layout, you must call glVertexAttribPointer to update the VAA state within the VAO.
+            6. No New IBO: If you don't bind a new IBO, the VAO will use the one that was previously bound for any glDrawElements calls.
 
-        || This behavior allows you to switch between VBOs easily, as long as they share the same vertex layout, without having to redefine the vertex attribute pointers. It's common in applications where you have multiple VBOs with the same vertex structure but different vertex data (like different meshes with the same attributes).
+        In summary, a VAO stores the VAA state and the IBO binding, but not the VBO itself. The VAO will use the last attribute configurations and the last bound IBO unless you make changes to these states.
 
-        || So, under a bound VAO, the last VAA setup and IBO binding will persist and apply to subsequent VBOs and draw calls unless explicitly changed.
 
 [\\] Notes on State Machines
 
@@ -317,7 +293,15 @@ Episode 12 - Vertex Arrays in OpenGL
 [//] Notes regarding behaviour of glVertexAttribPointer 
 
     -- Essentially, glVertexAttribPointer is setup'd and linked to each vertex buffer. When you create a new VBO, you need to re-invoke a new set of glVertexAttribPointer, and tell the VAO State Machine what is the configuration of this new VBO. WARNING: Contrary to beliefs thus far, the VertexAttribArray settings don't actually carry over for all subsequent VBOs. 
-        <<>> As mentioned in Notes [EP1-6], you can have multiple VAOs at the same time, for different VAAs configurations for different VBOs at the same time, enabling each VBO to have their own specific configuration at the same time without having to reconfigure them every time you want to use them. This is done by having multiple VAOs; binding a specific VAO; setting up a specific VBO; unbinding the specific VAO; repeat these few steps for each VBO. And now whenever you want to use a specific VBO with its configuration, just rebind the specific VAO, and you are free to proceed. 
+        <<>> As mentioned in Notes [EP1-6], you can have multiple VAOs at the same time, for different VAAs configurations for different VBOs at the same time, enabling each VBO to have their own specific configuration at the same time without having to One Vertex Buffer per Call: The glVertexAttribPointer function is used to specify the layout of vertex attribute data in the currently bound vertex buffer. It associates a specific vertex attribute index (like position, color, texture coordinates, etc.) with the data format and layout in that buffer. This association is made for one vertex buffer at a time, per call. If you have multiple vertex attributes (e.g., position, color), you need to call glVertexAttribPointer for each attribute, specifying how each attribute's data is laid out in the buffer.
+
+Calling for Each New Vertex Buffer: If you create a new vertex buffer and want to use it for vertex attribute data, you need to bind this new buffer with glBindBuffer(GL_ARRAY_BUFFER, bufferID) and then call glVertexAttribPointer for each vertex attribute you want to associate with this new buffer. This step is necessary every time you switch to a different vertex buffer that you intend to use for vertex attributes.
+
+Vertex Attribute Array Association: The term "vertex attribute array" refers to the concept of enabling and specifying the layout of vertex attributes in the context of a Vertex Array Object (VAO). When you call glVertexAttribPointer, you're effectively telling OpenGL how to interpret the data within the bound vertex buffer for a specific attribute index. This setup is stored in the currently bound VAO. Therefore, a VAO can be thought of as a collection of these associations between vertex attributes and vertex buffers, along with the state needed to manage these attributes (like enabling vertex attribute arrays with glEnableVertexAttribArray).
+
+Efficiency with VAOs: By using VAOs, you can efficiently switch between different sets of vertex data and attribute layouts. You set up the associations between vertex attributes and buffers once per VAO, and then by binding a different VAO, you switch all those associations in one operation. This is much more efficient than binding buffers and specifying attribute pointers every time you want to draw something different.
+
+In summary, glVertexAttribPointer is indeed for specifying the layout of data in one vertex buffer per call, and you need to call it for each attribute for every new vertex buffer you intend to use for rendering. The associations made by these calls are stored in the VAO, allowing you to switch between different vertex data setups efficiently. them every time you want to use them. This is done by having multiple VAOs; binding a specific VAO; setting up a specific VBO; unbinding the specific VAO; repeat these few steps for each VBO. And now whenever you want to use a specific VBO with its configuration, just rebind the specific VAO, and you are free to proceed. 
 
     -- Prompt Notes:
 
