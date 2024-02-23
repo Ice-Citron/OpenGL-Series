@@ -2,6 +2,11 @@
 
 #include <GL/glew.h>
 
+#include "VertexArray.h"
+#include "IndexBuffer.h"
+#include "Shader.h"
+
+
 // MSVC specific function. __ means that its compiler intrinsic. This essentially inserts a breakpoint whenver an error is encountered. 
 #define ASSERT(x) if (!x) __debugbreak(); // Only works in debug mode. 
 #define GLCall(x) GLClearError();\
@@ -15,5 +20,9 @@ bool GLLogCall(const char* function, const char* file, int line);
 
 class Renderer {
 
+public:
+
+	void Clear() const;
+	void Draw(const VertexArray& va, const IndexBuffer& ib, const Shader& shader) const;
 };
 

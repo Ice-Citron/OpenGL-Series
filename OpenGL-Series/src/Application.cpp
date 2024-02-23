@@ -9,6 +9,7 @@
 #include "Renderer.h"
 
 #include "VertexBuffer.h"
+#include "VertexBufferLayout.h"
 #include "IndexBuffer.h"
 #include "VertexArray.h"
 #include "Shader.h"
@@ -78,6 +79,8 @@ int main()
 	vb->Unbind();     // GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
 	ib->Unbind();     // GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
 
+	Renderer* renderer = new Renderer();
+
 	float r = 0.0f;
 	float increment = 0.01f;
 
@@ -85,16 +88,12 @@ int main()
 	while (!glfwWindowShouldClose(window))
 	{
 		/* Render here */
-		GLCall(glClear(GL_COLOR_BUFFER_BIT));
-		
-		shader->Bind();
+		renderer->Clear(); // GLCall(glClear(GL_COLOR_BUFFER_BIT));
+		renderer->Draw(*va, *ib, *shader); // this now bind the VAO, IBO and Shader
+
 		// uniform is set per draw call, unlike vertex attributes which are set per vertex. 
 		shader->SetUniform4f("u_Color", r, 0.3f, 0.8f, 1.0f);
 
-		va->Bind();
-		ib->Bind();
-
-		GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
 
 		if (r > 1.0f)
 			increment = -0.01f;
@@ -110,6 +109,7 @@ int main()
 		glfwPollEvents();
 	}
 
+	delete renderer;
 	delete shader;
 	delete va;
 	delete vb;

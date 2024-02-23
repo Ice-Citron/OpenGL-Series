@@ -19,3 +19,17 @@ bool GLLogCall(const char* function, const char* file, int line) {
 	}
 	return true;
 }
+
+void Renderer::Clear() const {
+
+	GLCall(glClear(GL_COLOR_BUFFER_BIT));
+}
+
+void Renderer::Draw(const VertexArray& va, const IndexBuffer& ib, const Shader& shader) const {
+	// Check EP16-EP18 notes, no need to bind VBO, because VBO is remembered by the VAO, as in, the VAO remembers which VBO does its VAAs assosciates to. 
+	// However VAO don't rememvber which IBO its assosciated to. 
+	shader.Bind();
+	va.Bind();
+	ib.Bind();
+	GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
+}
