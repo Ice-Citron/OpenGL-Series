@@ -1,4 +1,4 @@
-# OpenGL Series
+# OpenGL Fundamentals
 
 This repo contains the C++ code and study notes I written whilst following 
 [The Cherno's OpenGL series][series].
